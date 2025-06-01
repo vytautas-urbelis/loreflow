@@ -1,0 +1,38 @@
+name: chapter
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12.2
+  - psycopg2=2.9.9
+  - pip=23.3.1
+  - pip:
+      - django==5.0.3
+      - djangorestframework==3.15.0
+      - djangorestframework_simplejwt==5.3.1
+      - pillow==10.2.0
+      - drf-yasg==1.21.7
+      - flake8==7.0.0
+      - gunicorn==21.2.0
+      - uvicorn==0.32.0
+      - django_cors_headers==4.3.1
+      - segno==1.6.1
+      - aioapns==3.2
+      - pyjwt==2.8.0
+      - channels==4.1
+      - channels_redis==4.2.0
+      - websockets==13.1
+      - wsproto==1.2.0
+      - daphne==4.1.2
+      - selenium==4.25.0
+      - google-auth==2.36.0
+      - requests==2.32.3
+      - pypdf2==3.0.1
+      - drf-writable-nested==0.7.1
+      - openai==1.65.4
+      - mistralai==1.5.1
+      - celery==5.4.0
+      - django-celery-results==2.5.1
+      - watchdog==3.0.0
+      - json-repair==0.41.0
+      - beautifulsoup4==4.13.4

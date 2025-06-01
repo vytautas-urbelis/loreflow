@@ -1,0 +1,42 @@
+version: '3'
+services:
+  backend:
+    image: registry.gitlab.com/chapter-writer/chapter:latest
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend:/backend
+    command: 'tail -f /dev/null'
+    env_file:
+      - envs/dev.env
+    depends_on:
+      - database
+      - redis
+      - celery_worker
+  database:
+    image: postgres:16
+    ports:
+      - 5556:5432
+    env_file:
+      - envs/dev.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7.4.1
+    ports:
+      - 6379:6379
+    env_file:
+      - envs/dev.env
+  celery_worker:
+    image: registry.gitlab.com/chapter-writer/chapter:latest
+    volumes:
+      - ./backend:/backend
+    command: bash -c "cd /backend && watchmedo auto-restart --recursive --patterns='*.py' -- celery -A filmai worker -l INFO"
+    env_file:
+      - envs/dev.env
+    depends_on:
+      - redis
+      - database
+
+volumes:
+  postgres_data:

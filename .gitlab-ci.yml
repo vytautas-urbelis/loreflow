@@ -1,0 +1,118 @@
+stages:
+  - pull
+  - build
+  - lint
+  - push
+  - cleanup
+  - deploy
+
+before_script:
+  - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
+
+
+#pull_develop:
+#  stage: pull
+#  except:
+#    - main
+#  script:
+#    - docker pull "$CI_REGISTRY_IMAGE":latest || true
+
+#build_develop:
+#  stage: build
+#  except:
+#    - main
+#  script:
+#    - docker build --tag="$CI_PIPELINE_ID":"$CI_COMMIT_REF_NAME" --cache-from="$CI_REGISTRY_IMAGE":latest .
+#
+#lint_develop:
+#  stage: lint
+#  except:
+#    - main
+#  script:
+#    - docker compose -p "$CI_PIPELINE_ID" -f docker-compose.ci.yml run app flake8 . --max-line-length=100
+#
+#push_image_to_develop:
+#  stage: push
+#  except:
+#    - main
+#  script:
+#    - docker tag "$CI_PIPELINE_ID":"$CI_COMMIT_REF_NAME" "$CI_REGISTRY_IMAGE":"develop"
+#    - docker push "$CI_REGISTRY_IMAGE":"develop"
+#
+#cleanup_develop:
+#  stage: cleanup
+#  when: always
+#  except:
+#    - main
+#  script:
+#    - docker rmi -f "$CI_PIPELINE_ID":"$CI_COMMIT_REF_NAME" || true
+#    - docker compose -p "$CI_PIPELINE_ID" -f docker-compose.ci.yml down --remove-orphans
+
+#deploy_staging:
+#  stage: deploy
+#  when: manual
+#  only:
+#    - develop
+#  tags:
+#    - staging
+#  environment:
+#    name: staging
+#    url: https://staging-develop.ugem.app
+#  script:
+#    - docker compose -f docker-compose.staging.yml pull
+#    - docker compose -f docker-compose.staging.yml down --remove-orphans
+#    - docker volume rm ugem_frontend_build || true
+#    - docker compose -f docker-compose.staging.yml up -d
+
+# Production (main) pipeline
+pull:
+  stage: pull
+  allow_failure: true
+  script:
+    - docker pull "$CI_REGISTRY_IMAGE":latest || true
+
+build:
+  stage: build
+  script:
+    - docker build --tag="$CI_PIPELINE_ID":"$CI_COMMIT_REF_NAME" --cache-from="$CI_REGISTRY_IMAGE":latest .
+
+lint:
+  stage: lint
+  script:
+    - export CI_PIPELINE_ID=$CI_PIPELINE_ID
+    - export CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME
+    - docker compose -p "$CI_PIPELINE_ID" -f docker-compose.ci.yml run app flake8 . --max-line-length=100
+
+push_image:
+  stage: push
+  only:
+    - main
+    - tags
+  script:
+    - docker tag "$CI_PIPELINE_ID":"$CI_COMMIT_REF_NAME" "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_NAME"
+    - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_NAME"
+
+push_latest:
+  stage: push
+  script:
+    - docker tag "$CI_PIPELINE_ID":"$CI_COMMIT_REF_NAME" "$CI_REGISTRY_IMAGE":latest
+    - docker push "$CI_REGISTRY_IMAGE":latest
+
+cleanup:
+  stage: cleanup
+  when: always
+  script:
+    - docker rmi -f "$CI_PIPELINE_ID":"$CI_COMMIT_REF_NAME" || true
+    - docker compose -p "$CI_PIPELINE_ID" -f docker-compose.ci.yml down --remove-orphans
+
+deploy:
+  stage: deploy
+  when: manual
+  only:
+    - main
+    - tags
+  script:
+    - docker compose -f docker-compose.deploy.yml pull
+    - docker compose -f docker-compose.deploy.yml down --remove-orphans
+    - docker volume rm chapter_frontend_build || true
+    - docker compose -f docker-compose.deploy.yml up -d

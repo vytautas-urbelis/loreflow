@@ -1,0 +1,127 @@
+#version: '3'
+#services:
+#  backend:
+#    image: registry.gitlab.com/chapter-writer/chapter:main
+#    command: 'sh /scripts/prod.sh'
+#    env_file:
+#      - envs/prod.env
+#    depends_on:
+#      - database
+#      - redis
+#      - celery_worker
+#    volumes:
+#      - static_files:/static-files
+#      - media_files:/media-files
+#      - frontend_build:/frontend/dist
+#
+#  nginx:
+#    image: nginx:1.25
+#    ports:
+#      - '80:80'
+#      - '443:443'
+#    volumes:
+#      - static_files:/static-files
+#      - media_files:/media-files
+#      - ./nginx:/etc/nginx/conf.d
+#      - frontend_build:/frontend_build
+#      - /etc/letsencrypt:/etc/letsencrypt
+#
+#  database:
+#    image: postgres:16
+#    env_file:
+#      - envs/prod.env
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#
+#  redis:
+#    image: redis:7.4.1
+#    env_file:
+#      - envs/prod.env
+#
+#  celery_worker:
+#    image: registry.gitlab.com/chapter-writer/chapter:main
+#    volumes:
+#      - ./backend:/backend
+#    command: bash -c "cd /backend && watchmedo auto-restart --recursive --patterns='*.py' -- celery -A filmai worker -l INFO"
+#    env_file:
+#      - envs/prod.env
+#    depends_on:
+#      - redis
+#      - database
+#
+#volumes:
+#  postgres_data:
+#  static_files:
+#  media_files:
+#  frontend_build:
+version: '3'
+services:
+  backend:
+    image: registry.gitlab.com/chapter-writer/chapter:main
+    command: 'sh /scripts/prod.sh'
+    env_file:
+      - envs/prod.env
+    depends_on:
+      - database
+      - redis
+      - celery_worker
+    volumes:
+      - static_files:/static-files
+      - media_files:/media-files
+      - frontend_build:/frontend/dist
+    networks:
+      - app-net
+
+  nginx:
+    image: nginx:1.25
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - static_files:/static-files
+      - media_files:/media-files
+      - ./nginx:/etc/nginx/conf.d
+      - frontend_build:/frontend_build
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+  database:
+    image: postgres:16
+    env_file:
+      - envs/prod.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+  redis:
+    image: redis:7.4.1
+    env_file:
+      - envs/prod.env
+    networks:
+      - app-net
+
+  celery_worker:
+    image: registry.gitlab.com/chapter-writer/chapter:main
+    volumes:
+      - ./backend:/backend
+    command: bash -c "cd /backend && watchmedo auto-restart --recursive --patterns='*.py' -- celery -A filmai worker -l INFO"
+    env_file:
+      - envs/prod.env
+    depends_on:
+      - redis
+      - database
+    networks:
+      - app-net
+
+volumes:
+  postgres_data:
+  static_files:
+  media_files:
+  frontend_build:
+
+networks:
+  app-net:
